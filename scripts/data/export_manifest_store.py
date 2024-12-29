@@ -1,0 +1,1 @@
+# Exports C2PA manifest store to a Cairo structure serialized to array of felts.

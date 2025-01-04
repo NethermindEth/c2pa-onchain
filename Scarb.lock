@@ -4,3 +4,11 @@ version = 1
 [[package]]
 name = "c2pa"
 version = "0.1.0"
+
+[[package]]
+name = "ca_store"
+version = "0.1.0"
+
+[[package]]
+name = "fact_registry"
+version = "0.1.0"

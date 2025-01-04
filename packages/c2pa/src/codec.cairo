@@ -10,73 +10,41 @@ trait CborSerde<T> {
 /// CBOR serialization implementation for Claim
 impl ClaimCborSerde of CborSerde<Claim> {
     fn cbor_serialize(self: @Claim, ref output: WordArray) {
-        // Start CBOR map with 6 items (fixed number of fields)
-        output.append_u8(0xa6); // Map header with 6 items
+        output.append_u8(0xa6);
 
-        // Serialize title (optional string)
-        output.append_u8(0x65); // text string of length 5
-        output.append_string(@"title");
+        ByteArrayCborSerde::cbor_serialize(@"title", ref output);
         match *self.title {
-            Option::Some(title) => {
-                write_text_header(ref output, title.len());
-                output.append_string(title);
-            },
-            Option::None => {
-                output.append_u8(0xf6); // null
-            }
+            Option::Some(title) => ByteArrayCborSerde::cbor_serialize(title, ref output),
+            Option::None => output.append_u8(0xf6),
         }
 
-        // Serialize format
-        output.append_u8(0x66); // text string of length 6
-        output.append_string(@"format");
-        write_text_header(ref output, (*self.format).len());
-        output.append_string(*self.format);
+        ByteArrayCborSerde::cbor_serialize(@"format", ref output);
+        ByteArrayCborSerde::cbor_serialize(*self.format, ref output);
 
-        // Serialize instance_id
-        output.append_u8(0x6b); // text string of length 11
-        output.append_string(@"instance_id");
-        write_text_header(ref output, (*self.instance_id).len());
-        output.append_string(*self.instance_id);
+        ByteArrayCborSerde::cbor_serialize(@"instance_id", ref output);
+        ByteArrayCborSerde::cbor_serialize(*self.instance_id, ref output);
 
-        // Serialize claim_generator
-        output.append_u8(0x6f); // text string of length 15
-        output.append_string(@"claim_generator");
-        write_text_header(ref output, (*self.claim_generator).len());
-        output.append_string(*self.claim_generator);
+        ByteArrayCborSerde::cbor_serialize(@"claim_generator", ref output);
+        ByteArrayCborSerde::cbor_serialize(*self.claim_generator, ref output);
 
-        // Serialize signature
-        output.append_u8(0x69); // text string of length 9
-        output.append_string(@"signature");
-        write_text_header(ref output, (*self.signature).len());
-        output.append_string(*self.signature);
+        ByteArrayCborSerde::cbor_serialize(@"signature", ref output);
+        ByteArrayCborSerde::cbor_serialize(*self.signature, ref output);
 
-        // Serialize assertions array
-        output.append_u8(0x6a); // text string of length 10
-        output.append_string(@"assertions");
-        write_array_header(ref output, (*self.assertions).len());
-        for assertion in *self
-            .assertions {
-                HashedUriCborSerde::cbor_serialize(assertion, ref output);
-            }
+        ByteArrayCborSerde::cbor_serialize(@"assertions", ref output);
+        (*self.assertions).cbor_serialize(ref output);
     }
 }
 
 /// CBOR serialization implementation for HashedUri
 impl HashedUriCborSerde of CborSerde<HashedUri> {
     fn cbor_serialize(self: @HashedUri, ref output: WordArray) {
-        // Start CBOR map with 2 items
-        output.append_u8(0xa2); // Map header with 2 items
+        output.append_u8(0xa2);
 
-        // Serialize url
-        output.append_u8(0x63); // text string of length 3
-        output.append_string(@"url");
-        write_text_header(ref output, (*self.url).len());
-        output.append_string(*self.url);
+        ByteArrayCborSerde::cbor_serialize(@"url", ref output);
+        ByteArrayCborSerde::cbor_serialize(*self.url, ref output);
 
-        // Serialize hash
-        output.append_u8(0x64); // text string of length 4
-        output.append_string(@"hash");
-        write_u256(ref output, *self.hash);
+        ByteArrayCborSerde::cbor_serialize(@"hash", ref output);
+        (*self.hash).cbor_serialize(ref output);
     }
 }
 
@@ -131,22 +99,44 @@ fn write_bytes_header(ref output: WordArray, length: usize) {
     }
 }
 
-/// Helper function to write CBOR u256 as bytes
-fn write_u256(ref output: WordArray, value: u256) {
-    // A u256 is 32 bytes
-    write_bytes_header(ref output, 32);
-    // Write high 128 bits
-    output.append_word(value.high.try_into().unwrap(), 16);
-    // Write low 128 bits
-    output.append_word(value.low.try_into().unwrap(), 16);
+
+/// CBOR serialization implementation for ByteArray
+impl ByteArrayCborSerde of CborSerde<ByteArray> {
+    fn cbor_serialize(self: @ByteArray, ref output: WordArray) {
+        write_text_header(ref output, self.len());
+        output.append_string(self);
+    }
+}
+
+/// CBOR serialization implementation for u256
+impl U256CborSerde of CborSerde<u256> {
+    fn cbor_serialize(self: @u256, ref output: WordArray) {
+        // A u256 is 32 bytes
+        write_bytes_header(ref output, 32);
+        // Write high 128 bits
+        output.append_word((*self.high).try_into().unwrap(), 16);
+        // Write low 128 bits
+        output.append_word((*self.low).try_into().unwrap(), 16);
+    }
+}
+
+/// CBOR serialization implementation for Span<T>
+impl SpanCborSerde<T, impl TCborSerde: CborSerde<T>, impl TDrop: Drop<T>, impl TCopy: Copy<T>> 
+    of CborSerde<Span<T>> {
+    fn cbor_serialize(self: @Span<T>, ref output: WordArray) {
+        write_array_header(ref output, (*self).len());
+        for item in *self {
+            CborSerde::cbor_serialize(item, ref output);
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{CborSerde, ClaimCborSerde, HashedUriCborSerde};
-    use super::super::claim::{Claim, HashedUri};
-    use super::super::word_array::{WordArray, WordArrayTrait};
-    use super::super::word_array::hex::words_to_hex;
+    use super::{ClaimCborSerde, HashedUriCborSerde};
+    use crate::claim::{Claim, HashedUri};
+    use crate::word_array::{WordArray, WordArrayTrait};
+    use crate::word_array::hex::words_to_hex;
 
     #[test]
     fn test_hashed_uri_serialization() {

@@ -8,3 +8,6 @@ version = "0.1.0"
 readme = "README.md"
 repository = "https://github.com/NethermindEth/c2pa-onchain"
 license-file = "LICENSE"
+
+[workspace.dependencies]
+cairo_test = "2.8.5"

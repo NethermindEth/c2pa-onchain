@@ -23,18 +23,15 @@ pub struct Claim {
     /// Generator of this claim
     pub claim_generator: @ByteArray,
     // Detailed generator info of this claim (not supported)
-    // pub claim_generator_info: Option<Span<ClaimGeneratorInfo>>,
-
+    pub claim_generator_info: Option<()>,
     /// Link to signature box
     pub signature: @ByteArray,
     /// List of assertion hashed URIs
     pub assertions: Span<HashedUri>,
     // List of redacted assertions (not supported)
-// pub redacted_assertions: Option<Span<ByteArray>>,
-
+    // pub redacted_assertions: Option<Span<ByteArray>>,
     // Hashing algorithm, SHA256 by default (sha256 supported only)
-// pub alg: Option<ByteArray>,
-
+    pub alg: Option<@ByteArray>,
     // Hashing algorithm for soft bindings (sha256 supported only)
 // pub alg_soft: Option<ByteArray>,
 

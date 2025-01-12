@@ -1,0 +1,7 @@
+[package]
+name = "ca_store"
+version = "0.1.0"
+edition = "2024_07"
+
+[dev-dependencies]
+cairo_test.workspace = true

@@ -52,9 +52,9 @@ pub fn write_u32(ref output: WordArray, value: u32, tag: u8) {
     } else if value <= 65535 {
         output.append_u8(tag + 0x19); // Two bytes 
         let (hi, lo) = DivRem::div_rem(value, 0x100);
-        output.append_word(lo * 0x100 + hi, 2); // Little-endian
+        output.append_word(hi * 0x100 + lo, 2); // Big-endian
     } else {
         output.append_u8(tag + 0x1a); // Four bytes
-        output.append_u32_le(value);
+        output.append_u32_be(value);
     }
 }

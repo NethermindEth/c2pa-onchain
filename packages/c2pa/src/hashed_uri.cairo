@@ -1,8 +1,8 @@
-use crate::cbor_types::{String, Digest, SnapSerde, StringCborSerde, SnapCborSerde, DigestCborSerde};
-use crate::cbor::{CborSerde, write_map_header, write_map_field, write_map_field_opt};
+use crate::cbor::{CborSerde, write_map_field, write_map_field_opt, write_map_header};
+use crate::cbor_types::{Digest, DigestCborSerde, SnapCborSerde, SnapSerde, String, StringCborSerde};
 use crate::word_array::WordArray;
 
-#[derive(Drop, Copy, Debug, Serde)]
+#[derive(Drop, Copy, Debug, Serde, PartialEq)]
 pub struct HashedUri {
     /// URI stored as tagged CBOR
     pub url: String,

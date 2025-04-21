@@ -11,7 +11,7 @@ pub fn bytes_from_hex(hex_string: ByteArray) -> ByteArray {
         let lo = hex_char_to_nibble(hex_string[i + 1]);
         bytes.append_byte(hi * 16 + lo);
         i += 2;
-    };
+    }
 
     bytes
 }
@@ -44,7 +44,7 @@ pub fn bytes_to_hex(data: @ByteArray) -> ByteArray {
         result.append_byte(alphabet.at(l).unwrap());
         result.append_byte(alphabet.at(r).unwrap());
         i += 1;
-    };
+    }
 
     result
 }

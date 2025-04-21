@@ -3,11 +3,11 @@ members = ["packages/*"]
 
 [workspace.package]
 description = "C2PA checkpoint service"
-cairo-version = "2.9.1"
+cairo-version = "2.11.4"
 version = "0.1.0"
 readme = "README.md"
 repository = "https://github.com/NethermindEth/c2pa-onchain"
 license-file = "LICENSE"
 
 [workspace.dependencies]
-cairo_test = "2.9.1"
+cairo_test = "2.11.4"

@@ -1,7 +1,8 @@
-use crate::cbor_types::{String, SnapSerde};
+use crate::cbor::{CborSerde, write_map_field, write_map_field_opt, write_map_header};
+use crate::cbor_types::{
+    OptionCborSerde, SnapCborSerde, SnapSerde, SpanCborSerde, String, StringCborSerde,
+};
 use crate::hashed_uri::HashedUri;
-use crate::cbor::{CborSerde, write_map_header, write_map_field, write_map_field_opt};
-use crate::cbor_types::{StringCborSerde, SpanCborSerde, OptionCborSerde, SnapCborSerde};
 use crate::word_array::WordArray;
 
 /// A `Claim` gathers together all the `Assertion`s about an asset
@@ -45,9 +46,6 @@ pub struct Claim {
     pub metadata: Option<()> // not supported
 }
 
-// verify_signature()
-// verify_data_hash()
-
 /// CBOR serialization implementation for Claim
 impl ClaimCborSerde of CborSerde<Claim> {
     fn cbor_serialize(self: @Claim, ref output: WordArray) {
@@ -72,9 +70,9 @@ impl ClaimCborSerde of CborSerde<Claim> {
 
 #[cfg(test)]
 mod tests {
-    use super::{ClaimCborSerde, Claim};
-    use crate::word_array::{WordArray, WordArrayTrait};
     use crate::word_array::hex::words_to_hex;
+    use crate::word_array::{WordArray, WordArrayTrait};
+    use super::{Claim, ClaimCborSerde};
 
     #[test]
     fn test_claim_serialization() {

@@ -1,8 +1,8 @@
 use core::fmt::Debug;
-use crate::hex::{bytes_from_hex, bytes_to_hex};
 use crate::cbor::{
-    CborSerde, write_string_header, write_array_header, write_bytes_header, write_u32,
+    CborSerde, write_array_header, write_bytes_header, write_string_header, write_u32,
 };
+use crate::hex::{bytes_from_hex, bytes_to_hex};
 use crate::word_array::{WordArray, WordArrayTrait};
 
 /// Type alias for ascii string
@@ -15,7 +15,7 @@ pub type Bytes = @ByteBuffer;
 pub type Digest = u256;
 
 /// Newtype wrapper for ByteArray
-#[derive(Drop, Serde, PartialEq)]
+#[derive(Drop, Default, Serde, PartialEq)]
 pub struct ByteBuffer {
     pub data: ByteArray,
 }
@@ -73,10 +73,8 @@ pub impl DigestCborSerde of CborSerde<Digest> {
     fn cbor_serialize(self: @Digest, ref output: WordArray) {
         // A u256 is 32 bytes
         write_bytes_header(ref output, 32);
-        // Write high 128 bits
-        output.append_word((*self.high).try_into().unwrap(), 16);
-        // Write low 128 bits
-        output.append_word((*self.low).try_into().unwrap(), 16);
+        // Write the digest as a u256 (big endian)
+        output.append_u256_be(*self);
     }
 }
 

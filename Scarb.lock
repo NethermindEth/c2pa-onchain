@@ -10,5 +10,8 @@ name = "ca_store"
 version = "0.1.0"
 
 [[package]]
-name = "fact_registry"
+name = "claim_registry"
 version = "0.1.0"
+dependencies = [
+ "c2pa",
+]

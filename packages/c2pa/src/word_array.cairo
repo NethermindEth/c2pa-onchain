@@ -133,32 +133,27 @@ pub impl WordArrayImpl of WordArrayTrait {
         }
     }
 
-    /// Append a u32 number, reversing the byte order (little endian).
-    fn append_u32_le(ref self: WordArray, value: u32) {
-        // Split into bytes [r0 r1 r2 q2] in LE
-        let (q0, r0) = DivRem::div_rem(value, 0x100);
-        let (q1, r1) = DivRem::div_rem(q0, 0x100);
-        let (q2, r2) = DivRem::div_rem(q1, 0x100);
-        // Append in BE minding the last word
-        if self.last_input_num_bytes == 0 {
-            self.input.append(r0 * 0x1000000 + r1 * 0x10000 + r2 * 0x100 + q2)
-        } else if self.last_input_num_bytes == 1 {
-            self.input.append(self.last_input_word * 0x1000000 + r0 * 0x10000 + r1 * 0x100 + r2);
-            self.last_input_word = q2;
-        } else if self.last_input_num_bytes == 2 {
-            self.input.append(self.last_input_word * 0x10000 + r0 * 0x100 + r1);
-            self.last_input_word = r2 * 0x100 + q2;
-        } else {
-            self.input.append(self.last_input_word * 0x100 + r0);
-            self.last_input_word = r1 * 0x10000 + r2 * 0x100 + q2;
+    /// Append a [WordSpan] to the current array.
+    fn extend(ref self: WordArray, mut word_span: WordSpan) {
+        while let Some((word, num_bytes)) = word_span.pop_front() {
+            self.append_word(word, num_bytes);
         }
     }
 
-    /// Append a u64 number, reversing the byte order (little endian).
-    fn append_u64_le(ref self: WordArray, value: u64) {
-        let (hi, lo) = DivRem::div_rem(value, 0x100000000);
-        self.append_u32_le(lo.try_into().unwrap());
-        self.append_u32_le(hi.try_into().unwrap());
+    /// Append a u256 number (big endian).
+    fn append_u256_be(ref self: WordArray, value: u256) {
+        self.append_u128_be(value.high);
+        self.append_u128_be(value.low);
+    }
+
+    /// Append a u128 number (big endian).
+    fn append_u128_be(ref self: WordArray, value: u128) {
+        self.append_bytes(value.try_into().unwrap(), 16);
+    }
+
+    /// Append a u32 number (big endian).
+    fn append_u32_be(ref self: WordArray, value: u32) {
+        self.append_word(value, 4);
     }
 
     /// Append a byte.
@@ -262,7 +257,7 @@ pub impl WordArrayImpl of WordArrayTrait {
                     self.input.append(word.try_into().expect('append_bytes/1'));
                     full_words = r;
                     full_words_num_bytes -= 4;
-                };
+                }
                 self.input.append(full_words.try_into().expect('append_bytes/2'));
             }
 
@@ -285,7 +280,7 @@ pub impl WordArrayImpl of WordArrayTrait {
         while num_bytes31 != 0 {
             self.append_bytes31(out.pop_front().unwrap());
             num_bytes31 -= 1;
-        };
+        }
 
         let last_word = out.pop_front().unwrap();
         let last_word_len = out.pop_front().unwrap();
@@ -380,7 +375,7 @@ pub mod hex {
             let lo = hex_char_to_nibble(hex_string[i + 1]);
             words.append_u8(hi * 16 + lo);
             i += 2;
-        };
+        }
 
         words
     }
@@ -405,7 +400,7 @@ pub mod hex {
                 result.append_byte(alphabet.at(l).expect('l'));
                 result.append_byte(alphabet.at(r).expect('r'));
             }
-        };
+        }
 
         result
     }
@@ -413,9 +408,8 @@ pub mod hex {
 
 #[cfg(test)]
 mod tests {
-    use super::WordSpanTrait;
-    use super::hex::{words_to_hex};
-    use super::{WordArray, WordArrayTrait};
+    use super::hex::words_to_hex;
+    use super::{WordArray, WordArrayTrait, WordSpanTrait};
 
     #[test]
     fn test_append_u8() {
@@ -429,30 +423,23 @@ mod tests {
     }
 
     #[test]
-    fn test_append_u32_le() {
+    fn test_append_u32_be() {
         let mut words: WordArray = Default::default();
-        words.append_u32_le(1);
-        assert_eq!("01000000", words_to_hex(words.span()));
-        words.append_u32_le(0x01000000);
-        assert_eq!("0100000000000001", words_to_hex(words.span()));
+        words.append_u32_be(1);
+        assert_eq!("00000001", words_to_hex(words.span()));
+        words.append_u32_be(0x00000001);
+        assert_eq!("0000000100000001", words_to_hex(words.span()));
 
         let mut words: WordArray = Default::default();
         words.append_u8(0xff);
-        words.append_u32_le(0x01020304);
-        assert_eq!("ff04030201", words_to_hex(words.span()));
+        words.append_u32_be(0x01020304);
+        assert_eq!("ff01020304", words_to_hex(words.span()));
         words.append_u8(0xff);
-        words.append_u32_le(0x04030201);
-        assert_eq!("ff04030201ff01020304", words_to_hex(words.span()));
+        words.append_u32_be(0x04030201);
+        assert_eq!("ff01020304ff04030201", words_to_hex(words.span()));
         words.append_u8(0xff);
-        words.append_u32_le(1);
-        assert_eq!("ff04030201ff01020304ff01000000", words_to_hex(words.span()));
-    }
-
-    #[test]
-    fn test_append_u64_le() {
-        let mut words: WordArray = Default::default();
-        words.append_u64_le(0x0102030405060708);
-        assert_eq!("0807060504030201", words_to_hex(words.span()));
+        words.append_u32_be(1);
+        assert_eq!("ff01020304ff04030201ff00000001", words_to_hex(words.span()));
     }
 
     #[test]
